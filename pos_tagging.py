@@ -54,23 +54,67 @@ def check(sents, sents_tagged):
         if sent != sent_tagged:
             print("order may be changed!")
 
-def main():
+def execute_pos_tagging(input_data):
     years, sentences = [], []
-    with open(input_path, 'r') as input_file:
-        input_data = input_file.readlines()
-        for sent_num, year_sent in tqdm(enumerate(input_data)):
-            year, sent = year_sent.split("\t")
-            sent = sent.strip().split()
-            years.append(year)
-            sentences.append([sent_num, sent])
+    for sent_num, year_sent in tqdm(enumerate(input_data)):
+        year, sent = year_sent.split("\t")
+        sent = sent.strip().split()
+        years.append(year)
+        sentences.append([sent_num, sent])
     sents_tagged = multiprocess(sentences, 100)  # list of [sentence_number, tagged_sentence]
-    print("[Info] Finished POS tagging!")
     sents_tagged.sort()
     # check(sentences, sents_tagged)
     sents_tagged = [[year, sent_tagged[1]] for year, sent_tagged in zip(years, sents_tagged)]
-    with open(output_path, 'wb') as output_file:
-        pickle.dump(sents_tagged, output_file)
-    print("[Info] Wrote files!")
+    return sents_tagged
+
+def split_files(input_path):
+    with open(input_path, 'r') as input_file:
+        input_data = input_file.readlines()
+    input_length = len(input_data)
+    # 1000 slices
+    slice_length = input_length // 1000 + 1
+    sliced_data = _each_slice(input_data, slice_length)
+    return sliced_data
+
+def integrate_output(output_prefix, n):
+    all_data = []
+    for i in tqdm(range(n)):
+        with open(output_prefix+str(i), "rb") as f:
+            data = pickle.load(f)
+            all_data += data
+    with open(output_path, "wb") as f:
+        pickle.dump(all_data, f)
+    return
+
+def restore_from_output():
+    with open("coha_restored.txt", "w") as output_file, open(output_path, "rb") as f:
+        data = pickle.load(f)
+        for line in tqdm(data):
+            year, sent = line[0], line[1]
+            sent = " ".join([w for w, pos in sent])
+            output_file.write(f"{year}\t{sent}\n")
+    return
+
+def compare_original_and_restored():
+    with open("data/coha_valid_sentences.tsv", "r") as f, open("data/coha_restored.txt", "r") as g:
+        original = f.readlines()
+        restored = g.readlines()
+        for o, r in zip(original, restored):
+            assert o.replace("\t", "").replace(" ", "") == r.replace("\t", "").replace(" ", "")
+    return
+
+def main():
+    sliced_data = split_files(input_path)
+    for i, data in enumerate(sliced_data):
+        sents_tagged = execute_pos_tagging(data)
+        print("[Info] Finished POS tagging!")
+        with open(output_path + "." + str(i), 'wb') as output_file:
+            pickle.dump(sents_tagged, output_file)
+        print("[Info] Wrote files!")
+    # check and integrate
+    integrate_output(output_path+".", len(sliced_data))
+    restore_from_output()
+    compare_original_and_restored()
 
 if __name__ == "__main__":
     main()
