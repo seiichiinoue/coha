@@ -19,7 +19,6 @@ def _lemmatize(word_pos):
 def main():
     with open("data/coha_pos_tagged.pickle", "rb") as f:
         input_data = pickle.load(f)
-    # sents_lemmatized = execute_lemmatizing(input_data)
     data_lemmatized = []
     for year, sents in tqdm(input_data):
         sents = list(map(_lemmatize, sents))
