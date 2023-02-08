@@ -1,3 +1,6 @@
+"""
+script for creating List of [year, List of [word, pos]] as binary
+"""
 import os
 import pickle
 from tqdm import tqdm

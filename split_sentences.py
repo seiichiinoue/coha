@@ -11,7 +11,7 @@ with open(output_path, 'w') as output_file:
         with open(os.path.join(coha_path, fn), 'r') as f:
             f.readline()  # header
             f.readline()  # header
-            sentences = f.readline().replace(' ? ', '\n').replace(' . ', '\n').replace(' ! ', '\n').split('\n')
+            sentences = f.readline().replace(' ? ', ' ?\n').replace(' . ', ' .\n').replace(' ! ', ' !\n').split('\n')
             sentences = [sent.strip() for sent in sentences]
         year = fn.split('_')[1]
         for sentence in sentences:
